@@ -1,0 +1,45 @@
+{
+    "name": "apscli",
+    "description": "Advanced Powershell Command Line Interface -  A PS CLI",
+    "version": "0.0.2",
+    "license": "ISC",
+    "author": "Involvex",
+    "homepage": "https://github.com/involvex/",
+    "type": "commonjs",
+    "main": "src/index.js",
+    "node": ">=22.0.0",
+    "engines": {
+        "node": ">=22.0.0"
+    },
+    "scripts": {
+        "start": "node src/index.js",
+        "test": "mocha src/tests/test.js",
+        "lint": "eslint src/",
+        "lint:fix": "eslint src/ --fix",
+        "format": "prettier --write \"src/**/*.js\"",
+        "format:check": "prettier --check \"src/**/*.js\"",
+        "bundle": "npx esbuild src/index.js --bundle --platform=node --outfile=dist/apscli.js --external:term.js --external:pty.js --external:events --external:blessed --external:blessed-contrib --format=cjs && npx pkg dist/apscli.js --target node18-win-x64 --output dist/apscli.exe"
+    },
+    "bin": {
+        "apscli": "src/index.js"
+    },
+    "dependencies": {
+        "blessed": "^0.1.81",
+        "blessed-contrib": "^4.11.0",
+        "chalk": "^4.1.2",
+        "create-license": "^1.0.2",
+        "eslint-plugin-import": "^2.32.0",
+        "eslint-plugin-license-header": "^0.8.0",
+        "figlet": "^1.6.0",
+        "license-header": "^0.0.1-security",
+        "ps": "^1.0.0",
+        "ps-ui": "^1.0.12",
+        "systeminformation": "^5.27.8"
+    },
+    "devDependencies": {
+        "esbuild": "^0.25.9",
+        "eslint": "^9.35.0",
+        "mocha": "^11.7.2",
+        "prettier": "^3.6.2"
+    }
+}

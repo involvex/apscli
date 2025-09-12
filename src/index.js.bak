@@ -1,0 +1,808 @@
+/***********************************************
+ * @License
+ * Copyright Involvex
+ * Copyright 2025
+ ***********************************************/
+
+const contrib = require('blessed-contrib');
+
+const si = require('systeminformation');
+
+const chalk = require('chalk');
+
+const figlet = require('figlet');
+
+const fs = require('fs');
+
+const path = require('path');
+
+const { exec } = require('child_process');
+
+
+
+// Import custom modules// Import custom modules
+
+const commands = require('./commands');
+
+const theme = require('./theme');
+
+const { getProfileCommands } = require('./powershell-utils');
+
+
+
+// Initialize theme text functions// Initialize chalk - importing directly from theme to ensure consistency
+
+// const { text: themeText } = theme;
+
+// const { getProfileCommands } = require('./powershell-utils');
+
+// Store profile commands
+
+let profileCommands = [];// Initialize chalk - importing directly from theme to ensure consistency
+
+const { text: themeText } = theme;
+
+// Create a screen object
+
+const screen = blessed.screen({// Store profile commands
+
+    smartCSR: true,
+    profileCommands = [],
+
+    title: 'System Monitor',
+
+    dockBorders: true,// Create a screen object
+
+    fullUnicode: trueconst screen = blessed.screen({
+
+});    smartCSR: true,
+
+    title: 'System Monitor',
+
+// Create a grid layout    dockBorders: true,
+
+const grid = new contrib.grid({    fullUnicode: true
+
+    rows: 12,});
+
+    cols: 12,
+
+    screen: screen// Create a grid layout
+
+});const grid = new contrib.grid({
+
+    rows: 12,
+
+// Create header with fancy text    cols: 12,
+
+const header = grid.set(0, 0, 2, 12, blessed.box, {    screen: screen
+
+    content: figlet.textSync('System Monitor', {});
+
+        font: 'Standard',
+
+        horizontalLayout: 'default',// Create header with fancy text
+
+        verticalLayout: 'default'const header = grid.set(0, 0, 2, 12, blessed.box, {
+
+    }),    content: figlet.textSync('System Monitor', {
+
+    style: theme.styles.box        font: 'Standard',
+
+});        horizontalLayout: 'default',
+
+        verticalLayout: 'default'
+
+// CPU Usage gauge    }),
+
+const cpuGauge = grid.set(2, 0, 3, 4, contrib.gauge, {    style: theme.styles.box
+
+    label: 'CPU Usage',});
+
+    style: theme.styles.gauge,
+
+    showLabel: true// CPU Usage gauge
+
+});const cpuGauge = grid.set(2, 0, 3, 4, contrib.gauge, {
+
+    label: 'CPU Usage',
+
+// Memory gauge    style: theme.styles.gauge,
+
+const memGauge = grid.set(2, 4, 3, 4, contrib.gauge, {    showLabel: true
+
+    label: 'Memory Usage',});
+
+    style: theme.styles.gauge,
+
+    showLabel: true// Memory gauge
+
+});const memGauge = grid.set(2, 4, 3, 4, contrib.gauge, {
+
+    label: 'Memory Usage',
+
+// GPU gauge    style: theme.styles.gauge,
+
+const gpuGauge = grid.set(2, 8, 3, 4, contrib.gauge, {    showLabel: true
+
+    label: 'GPU Usage',});
+
+    style: theme.styles.gauge,
+
+    showLabel: true// GPU gauge
+
+});const gpuGauge = grid.set(2, 8, 3, 4, contrib.gauge, {
+
+    label: 'GPU Usage',
+
+// Disk usage box    style: theme.styles.gauge,
+
+const diskBox = grid.set(5, 0, 4, 6, blessed.box, {    showLabel: true
+
+    label: 'Disk Usage',});
+
+    style: theme.styles.box
+
+});// Disk usage donut
+
+const diskBox = grid.set(5, 0, 4, 6, blessed.box, {
+
+// Command output and system info log    label: 'Disk Usage',
+
+const outputLog = grid.set(5, 6, 7, 6, blessed.log, {    style: theme.styles.box
+
+    label: 'Command Output & System Info',});
+
+    style: theme.styles.log,
+
+    border: 'line',// Function to create ASCII progress bar
+
+    scrollable: true,function createProgressBar(percent, width = 50) {
+
+    alwaysScroll: true,    const filled = Math.round(width * (percent / 100));
+
+    scrollbar: {    const empty = width - filled;
+
+        style: {    return '[' + '='.repeat(filled) + ' '.repeat(empty) + '] ' + percent + '%';
+
+            bg: theme.colors.scrollbar}
+
+        }
+
+    },// Command output and system info log
+
+    mouse: trueconst outputLog = grid.set(5, 6, 7, 6, blessed.log, {
+
+});    label: 'Command Output & System Info',
+
+    style: theme.styles.log,
+
+// Function to create ASCII progress bar    border: 'line',
+
+function createProgressBar(percent, width = 50) {    scrollable: true,
+
+    const filled = Math.round(width * (percent / 100));    alwaysScroll: true,
+
+    const empty = width - filled;    scrollbar: {
+
+    return '[' + '='.repeat(filled) + ' '.repeat(empty) + '] ' + percent + '%';        style: {
+
+}            bg: theme.colors.scrollbar
+
+        }
+
+// Update system information with throttling    },
+
+let updateInProgress = false;    mouse: true
+
+async function updateSystemInfo() {});
+
+    if (updateInProgress) return;
+
+    updateInProgress = true;// Update system information with throttling
+
+let updateInProgress = false;
+
+    try {async function updateSystemInfo() {
+
+        // Update in parallel for better performance    if (updateInProgress) return;
+
+        const [cpuLoad, mem, disk] = await Promise.all([    updateInProgress = true;
+
+            si.currentLoad(),
+
+            si.mem(),    try {
+
+            si.fsSize()        // Update in parallel for better performance
+
+        ]);        const [cpuLoad, mem, disk] = await Promise.all([
+
+            si.currentLoad(),
+
+        // CPU Usage            si.mem(),
+
+        cpuGauge.setPercent(Math.round(cpuLoad.currentLoad));            si.fsSize()
+
+        ]);
+
+        // Memory Usage
+
+        const memPercent = Math.round((mem.used / mem.total) * 100);        // CPU Usage
+
+        memGauge.setPercent(memPercent);        cpuGauge.setPercent(Math.round(cpuLoad.currentLoad));
+
+
+
+        // Disk Usage        // Memory Usage
+
+        const mainDisk = disk[0];        const memPercent = Math.round((mem.used / mem.total) * 100);
+
+        const usedPercent = Math.round((mainDisk.used / mainDisk.size) * 100);        memGauge.setPercent(memPercent);
+
+        
+
+        // Update disk usage with ASCII progress bar        // Disk Usage
+
+        const usedGB = Math.round(mainDisk.used / 1024 / 1024 / 1024);        const mainDisk = disk[0];
+
+        const totalGB = Math.round(mainDisk.size / 1024 / 1024 / 1024);        const usedPercent = Math.round((mainDisk.used / mainDisk.size) * 100);
+
+        const progressBar = createProgressBar(usedPercent);        
+
+        diskBox.setContent(        // Update disk usage with ASCII progress bar
+
+            `\n  ${mainDisk.mount}\n` +        const usedGB = Math.round(mainDisk.used / 1024 / 1024 / 1024);
+
+            `  ${progressBar}\n` +        const totalGB = Math.round(mainDisk.size / 1024 / 1024 / 1024);
+
+            `  ${usedGB}GB used of ${totalGB}GB`        const progressBar = createProgressBar(usedPercent);
+
+        );        diskBox.setContent(
+
+            `\n  ${mainDisk.mount}\n` +
+
+        // System Information Log (update less frequently)            `  ${progressBar}\n` +
+
+        if (!this.lastInfoUpdate || Date.now() - this.lastInfoUpdate > 5000) {            `  ${usedGB}GB used of ${totalGB}GB`
+
+            const [cpu, os] = await Promise.all([si.cpu(), si.osInfo()]);        );
+
+            outputLog.setContent([
+
+                `CPU: ${cpu.manufacturer} ${cpu.brand}`,        // System Information Log (update less frequently)
+
+                `OS: ${os.distro} ${os.release}`,        if (!this.lastInfoUpdate || Date.now() - this.lastInfoUpdate > 5000) {
+
+                `Memory Total: ${Math.round(mem.total / 1024 / 1024 / 1024)} GB`,            const [cpu, os] = await Promise.all([si.cpu(), si.osInfo()]);
+
+                `Memory Free: ${Math.round(mem.free / 1024 / 1024 / 1024)} GB`            outputLog.setContent([
+
+            ].join('\n'));                `CPU: ${cpu.manufacturer} ${cpu.brand}`,
+
+            this.lastInfoUpdate = Date.now();                `OS: ${os.distro} ${os.release}`,
+
+        }                `Memory Total: ${Math.round(mem.total / 1024 / 1024 / 1024)} GB`,
+
+                `Memory Free: ${Math.round(mem.free / 1024 / 1024 / 1024)} GB`
+
+        screen.render();            ].join('\n'));
+
+        updateInProgress = false;            this.lastInfoUpdate = Date.now();
+
+    } catch (error) {        }
+
+        outputLog.log(themeText.error(`Error: ${error.message}`));
+
+        updateInProgress = false;        screen.render();
+
+    }    } catch (error) {
+
+}        sysLog.log(theme.text(`Error: ${error.message}`));
+
+    }
+
+// Create a container for prompt and input}
+
+const inputContainer = blessed.box({
+
+    parent: screen,// Quit on Escape, q, or Control-C
+
+    bottom: 0,screen.key(['escape', 'q', 'C-c'], function(ch, key) {
+
+    left: 0,    return process.exit(0);
+
+    height: 1,});
+
+    width: '100%',
+
+    style: {// Initial update
+
+        fg: theme.colors.fg,updateSystemInfo();
+
+        bg: theme.colors.bg
+
+    }// Update every second
+
+});setInterval(updateSystemInfo, 1000);
+
+
+
+// Create prompt box for current directory// Load PowerShell profile commands
+
+const promptBox = blessed.box({(async () => {
+
+    parent: inputContainer,    profileCommands = await getProfileCommands();
+
+    bottom: 0,    outputLog.log(theme.text.success(`Loaded ${profileCommands.length} commands from PowerShell profile`));
+
+    left: 0,})();
+
+    height: 1,
+
+    width: 'shrink',// Create a container for prompt and input
+
+    style: {const inputContainer = blessed.box({
+
+        fg: theme.colors.prompt,    parent: screen,
+
+        bg: theme.colors.bg    bottom: 0,
+
+    }    left: 0,
+
+});    height: 1,
+
+    width: '100%',
+
+// Create command input box    style: {
+
+const commandInput = blessed.textbox({        fg: theme.colors.fg,
+
+    parent: inputContainer,        bg: theme.colors.bg
+
+    bottom: 0,    }
+
+    height: 1,});
+
+    width: '100%-2',
+
+    keys: true,// Create prompt box for current directory
+
+    mouse: true,const promptBox = blessed.box({
+
+    inputOnFocus: true,    parent: inputContainer,
+
+    style: theme.styles.input    bottom: 0,
+
+});    left: 0,
+
+    height: 1,
+
+// Function to update current directory display    width: 'shrink',
+
+async function updatePrompt() {    style: {
+
+    exec('powershell -Command "(Get-Location).Path"', (error, stdout) => {        fg: theme.colors.prompt,
+
+        if (!error) {        bg: theme.colors.bg
+
+            const path = stdout.trim();    }
+
+            promptBox.setContent(`PS ${path}> `);});
+
+            screen.render();
+
+        }// Create command input box
+
+    });const commandInput = blessed.textbox({
+
+}    parent: inputContainer,
+
+    bottom: 0,
+
+// Function to get file and folder completions    height: 1,
+
+function getFileAndFolderCompletions(input) {    width: '100%-2',
+
+    try {    keys: true,
+
+        const dir = path.dirname(input);    mouse: true,
+
+        const base = path.basename(input);    inputOnFocus: true,
+
+        const fullDir = dir === '.' ? process.cwd() : path.resolve(process.cwd(), dir);    style: theme.styles.input
+
+        });
+
+        return fs.readdirSync(fullDir)
+
+            .filter(item => item.toLowerCase().startsWith(base.toLowerCase()))// Function to update current directory display
+
+            .map(item => {async function updatePrompt() {
+
+                const fullPath = path.join(dir, item);    const { exec } = require('child_process');
+
+                return fs.statSync(path.resolve(process.cwd(), fullPath)).isDirectory()     exec('powershell -Command "(Get-Location).Path"', (error, stdout) => {
+
+                    ? fullPath + '\\'         if (!error) {
+
+                    : fullPath;            const path = stdout.trim();
+
+            });            promptBox.setContent(`PS ${path}> `);
+
+    } catch (error) {            screen.render();
+
+        return [];        }
+
+    }    });
+
+}}
+
+
+
+// Function to get npm script completions// Function to get PowerShell command suggestions
+
+function getNpmScriptCompletions(input) {async function getPowerShellSuggestions(input) {
+
+    try {    const { exec } = require('child_process');
+
+        // Show all scripts when user types exactly "npm run"    return new Promise((resolve) => {
+
+        if (input === 'npm run' || input.startsWith('npm run ')) {        const script = `
+
+            const packagePath = path.join(process.cwd(), 'package.json');        $commandInput = '${input.replace(/'/g, "''")}*'
+
+            if (fs.existsSync(packagePath)) {        Get-Command $commandInput | Select-Object -ExpandProperty Name
+
+                const packageJson = JSON.parse(fs.readFileSync(packagePath, 'utf8'));        `;
+
+                const scripts = packageJson.scripts || {};        exec(`powershell -Command "${script}"`, (error, stdout) => {
+
+                            if (error) {
+
+                // If there's no space after "npm run", add one                resolve([]);
+
+                if (input === 'npm run') {                return;
+
+                    return Object.keys(scripts).map(script => `npm run ${script}`);            }
+
+                }            const suggestions = stdout.split('\n')
+
+                                .map(s => s.trim())
+
+                // If there's text after "npm run ", filter based on that                .filter(s => s && s.toLowerCase().startsWith(input.toLowerCase()));
+
+                const scriptPrefix = input.slice('npm run '.length);            resolve(suggestions);
+
+                return Object.keys(scripts)        });
+
+                    .filter(script => script.toLowerCase().startsWith(scriptPrefix.toLowerCase()))    });
+
+                    .map(script => `npm run ${script}`);}
+
+            }
+
+        }// Common PowerShell commands for auto-completion
+
+        return [];
+
+    } catch (error) {
+
+        return [];// Setup tab completion
+
+    }let completionState = {
+
+}    current: '',
+
+    index: -1,
+
+// Setup tab completion    results: [],
+
+let completionState = {    lastInput: ''
+
+    current: '',};
+
+    index: -1,
+
+    results: [],// Function to get file and folder completions
+
+    lastInput: ''function getFileAndFolderCompletions(input) {
+
+};    try {
+
+        const dir = path.dirname(input);
+
+// Use commands from the commands module        const base = path.basename(input);
+
+const commonCommands = commands.allCommands;        const fullDir = dir === '.' ? process.cwd() : path.resolve(process.cwd(), dir);
+
+        
+
+// Handle tab completion        return fs.readdirSync(fullDir)
+
+commandInput.key(['tab'], () => {            .filter(item => item.toLowerCase().startsWith(base.toLowerCase()))
+
+    const text = commandInput.getValue().trim();            .map(item => {
+
+                    const fullPath = path.join(dir, item);
+
+    // Reset completion state if input changed                return fs.statSync(path.resolve(process.cwd(), fullPath)).isDirectory() 
+
+    if (text !== completionState.lastInput) {                    ? fullPath + '\\' 
+
+        completionState.current = text;                    : fullPath;
+
+        completionState.index = -1;            });
+
+            } catch (error) {
+
+        // Get completions from different sources        return [];
+
+        const fileCompletions = getFileAndFolderCompletions(text);    }
+
+        const npmCompletions = getNpmScriptCompletions(text);}
+
+        const profileCmdCompletions = profileCommands.filter(cmd =>
+
+            cmd.toLowerCase().startsWith(text.toLowerCase())// Function to get npm script completions
+
+        );function getNpmScriptCompletions(input) {
+
+        const cmdCompletions = commonCommands.filter(cmd =>     try {
+
+            cmd.toLowerCase().startsWith(text.toLowerCase())        // Show all scripts when user types exactly "npm run"
+
+        );        if (input === 'npm run' || input.startsWith('npm run ')) {
+
+                    const packagePath = path.join(process.cwd(), 'package.json');
+
+        // Combine all completions            if (fs.existsSync(packagePath)) {
+
+        completionState.results = [                const packageJson = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
+
+            ...npmCompletions,         // Prioritize npm completions                const scripts = packageJson.scripts || {};
+
+            ...profileCmdCompletions,  // Then profile commands                
+
+            ...fileCompletions,        // Then files and folders                // If there's no space after "npm run", add one
+
+            ...cmdCompletions         // Then common commands                if (input === 'npm run') {
+
+        ];                    return Object.keys(scripts).map(script => `npm run ${script}`);
+
+                        }
+
+        completionState.lastInput = text;                
+
+                        // If there's text after "npm run ", filter based on that
+
+        // Show available completions if there are any                const scriptPrefix = input.slice('npm run '.length);
+
+        if (completionState.results.length > 0) {                return Object.keys(scripts)
+
+            const hint = `\nAvailable completions (${completionState.results.length}): ${                    .filter(script => script.toLowerCase().startsWith(scriptPrefix.toLowerCase()))
+
+                completionState.results                    .map(script => `npm run ${script}`);
+
+                    .slice(0, 5)  // Show first 5 completions            }
+
+                    .join(', ') +         }
+
+                (completionState.results.length > 5 ? '...' : '')        return [];
+
+            }`;    } catch (error) {
+
+            outputLog.log(themeText.completion(hint));        return [];
+
+        }    }
+
+    }}
+
+    
+
+    // Cycle through results// Use commands from the commands module
+
+    if (completionState.results.length > 0) {const commonCommands = commands.allCommands;
+
+        completionState.index = (completionState.index + 1) % completionState.results.length;
+
+        const suggestion = completionState.results[completionState.index];// Handle tab completion
+
+        commandInput.setValue(suggestion);commandInput.key(['tab'], () => {
+
+        commandInput.screen.render();    const text = commandInput.getValue().trim();
+
+    }    
+
+});    // Reset completion state if input changed
+
+    if (text !== completionState.lastInput) {
+
+// Handle input changes        completionState.current = text;
+
+commandInput.on('keypress', () => {        completionState.index = -1;
+
+    // Reset completion state when input changes        
+
+    completionState.lastInput = '';        // Get completions from different sources
+
+});        const fileCompletions = getFileAndFolderCompletions(text);
+
+        const npmCompletions = getNpmScriptCompletions(text);
+
+// Handle command execution        const cmdCompletions = commonCommands.filter(cmd => 
+
+commandInput.on('submit', async () => {            cmd.toLowerCase().startsWith(text.toLowerCase())
+
+    const command = commandInput.getValue();        );
+
+    if (!command) return;        const profileCmdCompletions = profileCommands.filter(cmd =>
+
+            cmd.toLowerCase().startsWith(text.toLowerCase())
+
+    try {        );
+
+        // Add command to output log with themed text        
+
+        const promptText = themeText.prompt(`PS ${process.cwd()}>`);        // Combine all completions
+
+        const cmdText = themeText.input(command);        completionState.results = [
+
+        outputLog.log(`\n${promptText} ${cmdText}`);            ...npmCompletions,  // Prioritize npm completions
+
+                    ...profileCmdCompletions,  // Then profile commands
+
+        // Execute command using systeminformation if it's a special command            ...fileCompletions,
+
+        if (command.toLowerCase() === 'clear') {            ...cmdCompletions
+
+            outputLog.setContent('');        ];
+
+        } else {        
+
+            // Execute PowerShell command        completionState.lastInput = text;
+
+            exec(`powershell -Command "${command}"`, async (error, stdout, stderr) => {        
+
+                if (error) {        // Show available completions if there are any
+
+                    outputLog.log(themeText.error(`Error: ${error.message}`));        if (completionState.results.length > 0) {
+
+                } else if (stderr) {            const hint = `\nAvailable completions (${completionState.results.length}): ${
+
+                    outputLog.log(themeText.warning(stderr));                completionState.results
+
+                } else if (stdout) {                    .slice(0, 5)  // Show first 5 completions
+
+                    outputLog.log(stdout);                    .join(', ') + 
+
+                }                (completionState.results.length > 5 ? '...' : '')
+
+                            }`;
+
+                // Add a blank line for better readability            outputLog.log(theme.text.completion(hint));
+
+                outputLog.log('');        }
+
+                    }
+
+                // Update prompt after command execution    
+
+                await updatePrompt();    // Cycle through results
+
+            });    if (completionState.results.length > 0) {
+
+        }        completionState.index = (completionState.index + 1) % completionState.results.length;
+
+    } catch (error) {        const suggestion = completionState.results[completionState.index];
+
+        outputLog.log(themeText.error(`Error: ${error.message}`));        commandInput.setValue(suggestion);
+
+    }        commandInput.screen.render();
+
+        }
+
+    // Clear input after execution});
+
+    commandInput.clearValue();
+
+    commandInput.focus();// Handle input changes
+
+    screen.render();commandInput.on('keypress', () => {
+
+});    // Reset completion state when input changes
+
+    completionState.lastInput = '';
+
+// Focus handling});
+
+screen.key(['escape', 'q'], () => process.exit(0));
+
+screen.key(['tab'], () => {// Handle command execution
+
+    if (!commandInput.focused) {commandInput.on('submit', async () => {
+
+        commandInput.focus();    const command = commandInput.getValue();
+
+    }    if (!command) return;
+
+});
+
+    try {
+
+// Add Ctrl+C handling to both screen and commandInput        // Add command to output log
+
+screen.key(['C-c'], () => process.exit(0));        outputLog.log(`\n${green(`PS ${process.cwd()}>`)} ${white(command)}`);
+
+commandInput.key(['C-c'], () => process.exit(0));        
+
+        // Execute command using systeminformation if it's a special command
+
+// Initial focus        if (command.toLowerCase() === 'clear') {
+
+commandInput.focus();            outputLog.setContent('');
+
+        } else {
+
+// Initial update            // Execute PowerShell command
+
+updateSystemInfo();            const { exec } = require('child_process');
+
+            exec(`powershell -Command "${command}"`, async (error, stdout, stderr) => {
+
+// Update every second                if (error) {
+
+setInterval(updateSystemInfo, 1000);                    outputLog.log(theme.text.error(`Error: ${error.message}`));
+
+                } else if (stderr) {
+
+// Load PowerShell profile commands                    outputLog.log(theme.text.warning(stderr));
+
+(async () => {                } else if (stdout) {
+
+    profileCommands = await getProfileCommands();                    outputLog.log(stdout);
+
+    outputLog.log(themeText.success(`Loaded ${profileCommands.length} commands from PowerShell profile`));                }
+
+})();                
+
+                // Add a blank line for better readability
+
+// Initial prompt update                outputLog.log('');
+
+updatePrompt();                
+
+                // Update prompt after command execution
+
+// Render the screen                await updatePrompt();
+
+screen.render();            });
+        }
+    } catch (error) {
+        sysLog.log(`Error: ${error.message}`);
+    }
+    
+    // Clear input after execution
+    commandInput.clearValue();
+    commandInput.focus();
+    screen.render();
+});
+
+
+// Focus handling
+screen.key(['escape', 'q'], () => process.exit(0));
+screen.key(['tab'], () => {
+    if (!commandInput.focused) {
+        commandInput.focus();
+    }
+});
+
+// Add Ctrl+C handling to both screen and commandInput
+screen.key(['C-c'], () => process.exit(0));
+commandInput.key(['C-c'], () => process.exit(0));
+
+// Initial focus
+commandInput.focus();
+
+// Render the screen
+screen.render();
+            })}

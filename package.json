@@ -3,7 +3,7 @@
     "description": "Advanced Powershell Command Line Interface -  A PS CLI",
     "keywords": [ "terminal", "cli", "command line", "powershell", "ps", "windows", "blessed", "blessed-contrib" ],
     "version": "0.0.2",
-    "license": "ISC",
+    "license": "./LICENSE",
     "author": "Involvex",
     "private": false,
     "homepage": "https://github.com/involvex/",

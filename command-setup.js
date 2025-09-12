@@ -5,6 +5,8 @@
  ***********************************************/
 
 // Temporary command handling setup
+const blessed = require('blessed');
+
 const commandSetup = {
     init: function (screen, sysLog) {
         // Create input container

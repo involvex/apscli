@@ -1,10 +1,16 @@
 {
-    "name": "apscli",
+    "name": "@involvex-org/apscli",
     "description": "Advanced Powershell Command Line Interface -  A PS CLI",
+    "keywords": [ "terminal", "cli", "command line", "powershell", "ps", "windows", "blessed", "blessed-contrib" ],
     "version": "0.0.2",
     "license": "ISC",
     "author": "Involvex",
+    "private": false,
     "homepage": "https://github.com/involvex/",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/involvex/apscli.git"
+    },
     "type": "commonjs",
     "main": "src/index.js",
     "node": ">=22.0.0",

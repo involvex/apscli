@@ -1,103 +1,255 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>APS CLI Documentation</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            margin: 0;
-            padding: 20px;
-            background-color: #f4f4f4;
-            color: #333;
-        }
-        .container {
-            max-width: 900px;
-            margin: auto;
-            background: #fff;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-        h1, h2, h3 {
-            color: #0056b3;
-        }
-        pre {
-            background: #eee;
-            padding: 10px;
-            border-radius: 5px;
-            overflow-x: auto;
-        }
-        code {
-            font-family: "Courier New", Courier, monospace;
-            background-color: #e9e9e9;
-            padding: 2px 4px;
-            border-radius: 3px;
-        }
-        a {
-            color: #0056b3;
-            text-decoration: none;
-        }
-        a:hover {
-            text-decoration: underline;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>APS CLI - Advanced PowerShell Command Line Interface</h1>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+        <title>APS CLI Documentation</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                line-height: 1.6;
+                margin: 0;
+                padding: 20px;
+                background-color: #0e0c0c;
+                color: #f5e9e9;
+            }
+            .container {
+                max-width: 900px;
+                margin: auto;
+                background: #181717;
+                padding: 30px;
+                border-radius: 8px;
+                box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            }
+            h1,
+            h2,
+            h3 {
+                color: #22f345;
+            }
+            pre {
+                background: #807e7e8f;
+                padding: 10px;
+                border-radius: 5px;
+                overflow-x: auto;
+            }
+            code {
+                font-family: 'Courier New', Courier, monospace;
+                background-color: #c0bebe88;
+                color: lime;
+                padding: 2px 4px;
+                border-radius: 3px;
+            }
+            a {
+                color: #0ac028;
+                text-decoration: none;
+            }
+            a:hover {
+                text-decoration: underline;
+            }
+            footer {
+                text-align: center;
+                padding: 1px;
+                color: #888;
+                display: block;
+                font-size: small;
+                margin-top: 10px;
+                border: 1px solid #807c7c;
+                background: #181717;
+                height: 80px;
+                margin-bottom: auto;
+            }
+            footer p {
+                margin-top: -5px;
+            }
+            footer img {
+                height: 30px;
+                display: relative;
+                text-align: center;
+                margin-left: -40px;
+                background: transparent;
+                margin-top: 5px;
+            }
+            nav {
+                margin-bottom: 20px;
+                margin-top: -10px;
+                position: fixed;
+                background: #2c292998;
+                padding: 10px;
+                border-radius: 5px;
+                display: flex;
+                width: 100%;
+                font-size: small;
+                text-align: center;
+            }
+            nav a {
+                color: rgb(88, 247, 123);
+                border: 1px solid #807c7c;
+                padding: 2px 2px;
+                border-radius: 15%;
+            }
+            nav a:hover {
+                background: #11f0e5;
+                color: #000000;
+                text-decoration: none;
+            }
+            nav a:active {
+                background: #11f0e5;
+                color: #000000;
+            }
+            material-icons {
+                font-family: 'Material Icons';
+                font-weight: normal;
+                font-style: normal;
+                font-size: 20px; /* Preferred icon size */
+                display: inline-block;
+                line-height: 1;
+                text-transform: none;
+                letter-spacing: normal;
+                word-wrap: normal;
+                white-space: nowrap;
+                direction: ltr;
 
-        <h2>Description</h2>
-        <p>APS CLI is a powerful and interactive terminal-based command-line interface designed to enhance your PowerShell experience. Built with Node.js, it provides real-time system monitoring, advanced command execution capabilities, and intelligent tab completion, all within a visually appealing and customizable terminal UI.</p>
+                /* Support for all WebKit browsers. */
+                -webkit-font-smoothing: antialiased;
+                /* Support for Safari and Chrome. */
+                text-rendering: optimizeLegibility;
 
-        <h2>Features</h2>
-        <ul>
-            <li><strong>Interactive Terminal UI:</strong> A rich and responsive user interface powered by <code>blessed</code> and <code>blessed-contrib</code>.</li>
-            <li><strong>Real-time System Monitoring:</strong>
+                /* Support for Firefox. */
+                -moz-osx-font-smoothing: grayscale;
+
+                /* Support for IE. */
+                font-feature-settings: 'liga';
+            }
+            element {
+                border: 3px solid #807c7c;
+                padding: 2px 2px;
+                background: #49484833;
+            }
+        </style>
+    </head>
+    <body>
+        <nav class="navbar">
+            <a href="#"><span class="material-icons">house</span>Home</a>
+            <a href="#description"><span class="material-icons">info</span>Description</a>
+            <a href="#features"><span class="material-icons">star</span>Features</a>
+            <a href="#installation"><span class="material-icons">download</span>Installation</a>
+            <a href="#usage"><span class="material-icons">terminal</span>Usage</a>
+            <a href="#contributing"><span class="material-icons">group</span>Contributing</a>
+            <a href="#license"><span class="material-icons">gavel</span>License</a>
+        </nav>
+        <div class="container">
+            <br />
+            <h2 class="title">APS CLI - Advanced PowerShell Command Line Interface</h2>
+            <div id="description element">
+                <h2>Description</h2>
+                <p>
+                    APS CLI is a powerful and interactive terminal-based command-line interface
+                    designed to enhance your PowerShell experience. Built with Node.js, it provides
+                    real-time system monitoring, advanced command execution capabilities, and
+                    intelligent tab completion, all within a visually appealing and customizable
+                    terminal UI.
+                </p>
+            </div>
+            <div id="features element">
+                <h2>Features</h2>
                 <ul>
-                    <li><strong>CPU Usage:</strong> Monitor your CPU load with a dynamic gauge.</li>
-                    <li><strong>Memory Usage:</strong> Keep track of your system's memory consumption.</li>
-                    <li><strong>GPU Usage:</strong> Observe your GPU utilization.</li>
-                    <li><strong>Disk Usage:</strong> View disk space usage with a clear progress bar.</li>
-                    <li><strong>Network Statistics:</strong> Monitor network activity including download/upload speeds and latency to <code>1.1.1.1</code>.</li>
+                    <li>
+                        <strong>Interactive Terminal UI:</strong> A rich and responsive user
+                        interface powered by <code>blessed</code> with improved layout and alignment for system info, command input, and command logs.
+                    </li>
+                    <li>
+                        <strong>Real-time System Monitoring:</strong>
+                        <ul>
+                            <li>
+                                <strong>CPU Usage:</strong> Monitor your CPU load with a dynamic
+                                gauge.
+                            </li>
+                            <li>
+                                <strong>Memory Usage:</strong> Keep track of your system's memory
+                                consumption.
+                            </li>
+                            <li><strong>GPU Usage:</strong> Observe your GPU utilization.</li>
+                            <li>
+                                <strong>Disk Usage:</strong> View disk space usage with a clear
+                                progress bar.
+                            </li>
+                            <li>
+                                <strong>Network Statistics:</strong> Monitor network activity
+                                including download/upload speeds and latency to
+                                <code>1.1.1.1</code>.
+                            </li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong>Advanced Command Execution:</strong> Execute PowerShell commands
+                        directly within the CLI.
+                    </li>
+                    <li>
+                        <strong>Intelligent Tab Completion:</strong>
+                        <ul>
+                            <li>Auto-completion for common commands.</li>
+                            <li>File and folder path completion.</li>
+                            <li>npm script completion (reads from <code>package.json</code>).</li>
+                            <li>PowerShell profile command completion.</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong>Customizable Theming:</strong> Adjust the look and feel to your
+                        preference.
+                    </li>
                 </ul>
-            </li>
-            <li><strong>Advanced Command Execution:</strong> Execute PowerShell commands directly within the CLI.</li>
-            <li><strong>Intelligent Tab Completion:</strong>
-                <ul>
-                    <li>Auto-completion for common commands.</li>
-                    <li>File and folder path completion.</li>
-                    <li>npm script completion (reads from <code>package.json</code>).</li>
-                    <li>PowerShell profile command completion.</li>
-                </ul>
-            </li>
-            <li><strong>Customizable Theming:</strong> Adjust the look and feel to your preference.</li>
-        </ul>
-
-        <h2>Installation</h2>
-        <p>To get started with APS CLI, follow these steps:</p>
-        <ol>
-            <li><strong>Clone the repository:</strong>
-                <pre><code>git clone https://github.com/your-username/customterminalui.git
+            </div>
+            <div id="installation">
+                <h2>Installation</h2>
+                <p>To get started with APS CLI, follow these steps:</p>
+                <ol>
+                    <li>
+                        <strong>Clone the repository:</strong>
+                        <pre><code>git clone https://github.com/your-username/customterminalui.git
 cd customterminalui</code></pre>
-            </li>
-            <li><strong>Install dependencies:</strong>
-                <pre><code>npm install</code></pre>
-            </li>
-        </ol>
-
-        <h2>Usage</h2>
-        <p>To run the APS CLI, execute the following command in your terminal:</p>
-        <pre><code>node src/index.js</code></pre>
-        <p>Once launched, you can start typing PowerShell commands. Use the <code>Tab</code> key for auto-completion suggestions.</p>
-
-        <h2>Contributing</h2>
-        <p>Contributions are welcome! If you have suggestions for improvements or new features, please open an issue or submit a pull request.</p>
-
-        <h2>License</h2>
-        <p>This project is licensed under the MIT License - see the <a href="../LICENSE">LICENSE</a> file for details.</p>
-    </div>
-</body>
+                    </li>
+                    <li>
+                        <strong>Install dependencies:</strong>
+                        <pre><code>npm install</code></pre>
+                    </li>
+                </ol>
+            </div>
+            <div id="usage">
+                <h2>Usage</h2>
+                <p>To run the APS CLI, execute the following command in your terminal:</p>
+                <pre><code>node src/index.js</code></pre>
+                <p>
+                    Once launched, you can start typing PowerShell commands. Use the
+                    <code>Tab</code> key for auto-completion suggestions.
+                </p>
+            </div>
+            <div id="contributing">
+                <h2>Contributing</h2>
+                <p>
+                    Contributions are welcome! If you have suggestions for improvements or new
+                    features, please open an issue or submit a pull request.
+                </p>
+            </div>
+            <div id="license">
+                <h2>License</h2>
+                <p>
+                    This project is licensed under the MIT License - see the
+                    <a href="../LICENSE">LICENSE</a> file for details.
+                </p>
+            </div>
+        </div>
+    </body>
+    <footer>
+        <a href="https://buymeacoffee.com/involvex"
+            ><img
+                src="https://www.buymeacoffee.com/assets/img/guidelines/logo-mark-1.svg"
+                alt="Buy Me a Coffee"
+            />Buy Me a Coffee</a
+        >
+        <br />
+        <a href="https://github.com/involvex/apscli">Github Repository</a>
+        <br />
+        <p>&copy; 2025 Involvex. All rights reserved.</p>
+    </footer>
 </html>

@@ -10,55 +10,68 @@ const chalk = require('chalk');
 // Theme configuration
 const theme = {
     colors: {
-        fg: '#39FF14', // Pure neon green
+        fg: '#31f318', // Lime green
         bg: '#000000', // Deep black background
-        border: '#FFFFFF', // White borders
+        border: '#0018f5', // White borders
         error: '#FF0000', // Bright red
         warning: '#FFFF00', // Bright yellow
-        success: '#39FF14', // Pure neon green
-        prompt: '#39FF14', // Pure neon green
-        input: '#39FF14', // Pure neon green
-        scrollbar: '#FFFFFF', // White scrollbar
-        completion: '#39FF14', // Pure neon green
+        success: '#32CD32', // Lime green
+        prompt: '#32CD32', // Lime green
+        input: '#000000', // Lime green
+        scrollbar: '#73ff00', // White scrollbar
+        completion: '#32CD32', // Lime green
+        text: '#6df85aff', // Lime green text
+        fontcolor: '#6df85aff',
+        header: '#49f732ff',
     },
 
     // Style configurations for different components
     styles: {
         box: {
-            fg: '#39FF14', // Pure neon green text
+            fg: '#3cff00', // Lime green text
             bg: '#000000', // Deep black background
             border: {
-                fg: '#FFFFFF', // White border
+                fg: '#2bff00',
+                bg: '#000000', // White border
             },
             bold: true, // Make text bold for more visibility
         },
         gauge: {
-            fg: '#39FF14', // Pure neon green for gauge
-            bg: '#000000', // Deep black background
+            label: ['#32CD32'],
+            bar: ['#32CD32'],
+            bg: '#000000',
             border: {
-                fg: '#FFFFFF', // White border
+                fg: '#09ec1c',
             },
         },
         log: {
-            fg: '#39FF14', // Pure neon green text
+            fg: '#32CD32', // Lime green text
             bg: '#000000', // Deep black background
             border: {
-                fg: '#FFFFFF', // White border
+                fg: '#22ff04', // White border
             },
             scrollbar: {
-                bg: '#FFFFFF', // White scrollbar
+                bg: '#1eff00', // White scrollbar
             },
             bold: true, // Make text bold for more visibility
         },
         input: {
-            fg: '#39FF14', // Pure neon green text
+            fg: '#3cff00', // Lime green text
             bg: '#000000', // Deep black background
             bold: true, // Make text bold for more visibility
         },
         selected: {
-            bg: '#39FF14', // Pure neon green background for selected items
+            bg: '#32CD32', // Lime green background for selected items
             fg: '#000000', // Black text for contrast when selected
             bold: true, // Make text bold for more visibility
+        },
+        output: {
+            bg: '#000000', // Deep black background
+            fg: '#32CD32', // Lime green text
+            border: {
+                fg: '#22ff04', // White border
+            },
+            bold: true,
         },
     },
 
@@ -66,10 +79,10 @@ const theme = {
     text: {
         error: (text) => chalk.hex('#FF0000').bold(text), // Bright red
         warning: (text) => chalk.hex('#FFFF00').bold(text), // Bright yellow
-        success: (text) => chalk.hex('#39FF14').bold(text), // Pure neon green
-        prompt: (text) => chalk.hex('#39FF14').bold(text), // Pure neon green
-        input: (text) => chalk.hex('#39FF14').bold(text), // Pure neon green
-        completion: (text) => chalk.hex('#39FF14').bold(text), // Pure neon green
+        success: (text) => chalk.hex('#32CD32').bold(text), // Lime green
+        prompt: (text) => chalk.hex('#32CD32').bold(text), // Lime green
+        input: (text) => chalk.hex('#32CD32').bold(text), // Lime green
+        completion: (text) => chalk.hex('#32CD32').bold(text), // Lime green
     },
 };
 

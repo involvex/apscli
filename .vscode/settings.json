@@ -1,3 +1,13 @@
 {
-    "cSpell.words": ["Involvex"]
+    "cSpell.words": [
+        "APSCLI",
+        "Involvex",
+        "pwsh"
+    ],
+    "editor.quickSuggestions": {
+        "other": true,
+        "comments": true,
+        "strings": true
+    },
+    "editor.suggestOnTriggerCharacters": true
 }

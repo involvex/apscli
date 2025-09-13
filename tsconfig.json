@@ -1,0 +1,28 @@
+{
+    "compilerOptions": {
+        "forceConsistentCasingInFileNames": true,
+        "strict": true,
+        "outDir": "./dist/",
+        "sourceMap": true,
+        "noImplicitAny": true,
+        "module": "commonjs",
+        "target": "es6",
+        "jsx": "preserve",
+        "lib": ["es6", "dom", "ES2022", "ES2020", "ES2019", "ES2018", "WebWorker", "ES2017"],
+        "removeComments": false,
+        "allowJs": true,
+        "moduleResolution": "Node",
+        "ignoreDeprecations": "6.0"
+    },
+    "exclude": ["**/*.spec.ts", "term.js", "pty.js"],
+    "include": [
+        "./src/index.tsx",
+        "src/**/*.js",
+        "./node_modules/blessed/lib/widget.js",
+        "./node_modules/blessed/lib/blessed.js",
+        "./node_modules/blessed/lib/widgets/node.js",
+        "./node_modules/*.js",
+        "./src/commands.js",
+        ".commands.js"
+    ]
+}

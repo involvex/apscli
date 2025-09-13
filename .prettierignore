@@ -1,0 +1,10 @@
+node_modules
+dist
+.vscode/**
+.git
+.gitignore
+.ps1
+.bak
+
+ReadMe.md
+package-lock.json

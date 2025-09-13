@@ -26,6 +26,7 @@ const powerShellCommands = [
     'Invoke-Command',
     'Get-Help',
     'Get-Command',
+    'pwsh -c kill node',
 ];
 
 // NPM related commands

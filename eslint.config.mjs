@@ -4,7 +4,7 @@
  * Copyright 2025
  ***********************************************/
 
-import { defineConfig } from 'eslint/config';
+import { defineConfig, globalIgnores } from 'eslint/config';
 import globals from 'globals';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -12,7 +12,8 @@ import js from '@eslint/js';
 import { FlatCompat } from '@eslint/eslintrc';
 
 import licenseHeader from 'eslint-plugin-license-header';
-import importPlugin from 'eslint-plugin-import';
+import * as importPlugin from 'eslint-plugin-import';
+import html from 'eslint-plugin-html';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -23,6 +24,14 @@ const compat = new FlatCompat({
 });
 
 export default defineConfig([
+    {
+        ignores: [
+            'dist/**',
+            'node_modules/**',
+            'public/apscli/dist/**',
+            'public/apscli/node_modules/**',
+        ],
+    },
     {
         extends: compat.extends('eslint:recommended'),
 
@@ -36,6 +45,10 @@ export default defineConfig([
         },
         plugins: {
             'license-header': licenseHeader,
+            'eslint-ignore': ['error', globalIgnores],
+            // 'ignores': importPlugin.configs.ignores,
+            import: importPlugin.configs.recommended,
+            html: html,
         },
 
         rules: {
@@ -59,3 +72,6 @@ export default defineConfig([
         },
     },
 ]);
+// This is a temporary file for command handling setup.
+// It is not used in the main application.
+// The main application uses the command handling logic in src/index.js.

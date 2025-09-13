@@ -4,8 +4,8 @@
  * Copyright 2025
  ***********************************************/
 
-const blessed = require('blessed'); // Create header with simp// CPU Usage gauge
-const contrib = require('blessed-contrib');
+const blessed = require('blessed');
+// const contrib = require('blessed-contrib'); // No longer used
 const si = require('systeminformation');
 const chalk = require('chalk');
 const figlet = require('figlet');
@@ -16,13 +16,13 @@ const { exec } = require('child_process');
 // Import custom modules
 const { allCommands } = require('./commands.js');
 const theme = require('./theme.js');
-const { getProfileCommands } = require('./powershell-utils.js');
-
+const { getProfileCommands, getGpuUsage } = require('./powershell-utils.js');
 // Initialize theme text functions
 const { text: themeText } = theme;
 
 // Store profile commands
 let profileCommands = [];
+let lastInfoUpdate = 0;
 
 // Create a screen object
 const screen = blessed.screen({
@@ -32,129 +32,163 @@ const screen = blessed.screen({
     fullUnicode: true,
 });
 
-// Create a grid layout
-const grid = new contrib.grid({
-    rows: 12,
-    cols: 12,
-    screen: screen,
+// Create header
+const header = blessed.box({
+    parent: screen,
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: 5, // Increased header height to fit figlet text
+    title: 'APS CLI', // Shortened title
+    setContent: 'APSCLI',
+    align: 'center',
+    valign: 'middle',
+    tags: true,
+    style: theme.styles.box,
+    border: 'line',
+    text: 'APSCLI',
 });
 
-// Create header with simple text for now
-const header = grid.set(0, 0, 2, 12, blessed.box, {
-    content: 'APS CLI - Advanced PowerShell Command Line Interface', // Simple text for header
-    align: 'center', // Center the text horizontally
-    valign: 'middle', // Center the text vertically
-    tags: true, // Enable tags for styling
-    style: {
-        fg: '#00FF00', // Pure neon green text
-        bg: '#000000', // Deep black background
-        border: {
-            fg: '#FFFFFF', // White border
-        },
-        bold: true, // Make text bold
-        FontSize: 10,
+figlet.text(
+    'APSCLI',
+    {
+        fontsize: 1,
+        font: 'Mini',
+        horizontalLayout: 'default',
+        verticalLayout: 'default',
     },
-    border: 'line', // Add border around the header
-    padding: {
-        // Add padding for better appearance
-        top: 0,
-        left: 2,
-        right: 2,
-    },
+    (err, data) => {
+        if (!err) {
+            header.setContent(data);
+        }
+        screen.render();
+    }
+);
+
+// Gauges container
+const gaugesContainer = blessed.box({
+    parent: screen,
+    top: 5,
+    left: 'center',
+    width: '99%',
+    height: 3, // Fixed height for gauges
 });
 
 // CPU Usage gauge
-const cpuGauge = grid.set(2, 0, 3, 3, contrib.gauge, {
+const cpuGauge = blessed.progressbar({
+    parent: gaugesContainer,
     label: 'CPU Usage',
-    showLabel: true,
-    style: {
-        fg: 'green',
-        label: ['green'],
-        bar: ['green'],
-        bg: 'black',
-        padding: { top: 0, bottom: 0 },
-    },
-    percent: [80],
-    data: [80],
+    top: 0,
+    left: 0,
+    width: '33%',
+    height: '100%', // Fill parent height
+    style: { ...theme.styles.box, bar: { bg: theme.colors.fg } },
+    border: 'line',
+    filled: 0,
 });
 
 // Memory gauge
-const memGauge = grid.set(2, 3, 3, 3, contrib.gauge, {
+const memGauge = blessed.progressbar({
+    parent: gaugesContainer,
     label: 'Memory Usage',
-    showLabel: true,
-    style: {
-        fg: 'green',
-        label: ['green'],
-        bar: ['green'],
-        bg: 'black',
-        padding: { top: 0, bottom: 0 },
-    },
-    percent: [60],
-    data: [60],
-});
-
-const gpuGauge = grid.set(2, 6, 3, 3, contrib.gauge, {
-    label: 'GPU Usage',
-    showLabel: true,
-    style: {
-        fg: 'green',
-        label: ['green'],
-        bar: ['green'],
-        bg: 'black',
-        padding: { top: 0, bottom: 0 },
-    },
-    percent: [40],
-    data: [40],
-});
-
-const networkStats = grid.set(2, 9, 6, 3, blessed.log, {
-    label: 'Network Stats',
-    style: theme.styles.log,
+    top: 0,
+    left: '33%',
+    width: '33%',
+    height: '100%', // Fill parent height
+    style: { ...theme.styles.box, bar: { bg: theme.colors.fg } },
     border: 'line',
-    scrollable: true,
-    scrollbar: {
-        style: {
-            bg: theme.colors.scrollbar,
-        },
-    },
-    mouse: true,
+    filled: 0,
+});
+
+const gpuGauge = blessed.progressbar({
+    parent: gaugesContainer,
+    label: 'GPU Usage',
+    top: 0,
+    left: '66%',
+    width: '34%',
+    height: '100%', // Fill parent height
+    style: { ...theme.styles.box, bar: { bg: theme.colors.fg } },
+    border: 'line',
+});
+
+// Info row container (for Disk, Network, System Info)
+const infoRowContainer = blessed.box({
+    parent: screen,
+    top: 8, // Below gaugesContainer (5 + 3)
+    left: 'center',
+    width: '99%',
+    height: 5, // Fixed height for this row
 });
 
 // Disk usage box
-const diskBox = grid.set(4, 0, 2, 6, blessed.box, {
+const diskBox = blessed.box({
+    parent: infoRowContainer,
     label: 'Disk Usage',
+    top: 0,
+    left: 0,
+    width: '33%',
+    height: '100%', // Fill parent height
     style: theme.styles.box,
+    border: 'line',
+});
+
+// Network stats
+const networkStats = blessed.log({
+    parent: infoRowContainer,
+    label: 'Network Stats',
+    top: 0,
+    left: '33%',
+    width: '33%',
+    height: '100%', // Fill parent height
+    style: theme.styles.log,
+    border: 'line',
 });
 
 // System info log
-const sysInfoLog = grid.set(4, 6, 3, 6, blessed.log, {
+const sysInfoLog = blessed.log({
+    parent: infoRowContainer,
     label: 'System Info',
+    top: 0,
+    left: '66%',
+    width: '34%',
+    height: '100%', // Fill parent height
     style: theme.styles.log,
     border: 'line',
+});
+
+// Command output log (main terminal output)
+const outputLog = blessed.log({
+    parent: screen,
+    tags: true,
+    border: 'line',
+    top: 13, // Below infoRowContainer (5 + 3 + 5)
+    height: '40%', // Adjusted height for better fit
+    bottom: 'auto',
+    left: 0,
+    width: '100%',
+    label: 'Terminal Output',
+    style: { ...theme.styles.log, bg: theme.colors.bg }, // Explicitly set background
     scrollable: true,
+    alwaysScroll: true,
     scrollbar: {
         style: {
             bg: theme.colors.scrollbar,
         },
     },
     mouse: true,
+    hidden: false,
 });
 
-// Command output log (appears below input)
-const commandLog = blessed.log({
+// Executed Command Log (history of commands)
+const executedCommandLog = blessed.log({
     parent: screen,
-    bottom: 0,
+    bottom: 3, // Above inputContainer
+    height: '20%', // Adjusted height
     left: 0,
-    height: '30%',
     width: '100%',
-    label: 'Command Output',
+    label: 'Executed Commands',
+    style: { ...theme.styles.log, bg: theme.colors.bg }, // Explicitly set background
     tags: true,
-    style: {
-        ...theme.styles.log,
-        border: {
-            fg: theme.colors.border,
-        },
-    },
     border: 'line',
     scrollable: true,
     alwaysScroll: true,
@@ -164,31 +198,11 @@ const commandLog = blessed.log({
         },
     },
     mouse: true,
-    hidden: true, // Initially hidden
-});
-const outputLog = blessed.log({
-    // This is the main output log for general messages
-    parent: screen,
-    tags: true,
-    border: 'line',
-    bottom: 0,
-    left: 0,
-    hide: 1,
-    show: 0,
-
-    height: '0%',
-    width: '0%',
-    style: {
-        fg: 'white',
-        bg: 'black',
-        border: {
-            fg: '#f0f0f0',
-        },
-    },
+    hidden: false,
 });
 
 // Function to create ASCII progress bar
-function createProgressBar(percent, width = 50) {
+function createProgressBar(percent, width = 20) {
     const filled = Math.round(width * (percent / 100));
     const empty = width - filled;
     return '[' + '='.repeat(filled) + ' '.repeat(empty) + '] ' + percent + '%';
@@ -213,25 +227,45 @@ async function getPingLatency(host) {
 
 // Update system information with throttling
 let updateInProgress = false;
+let gpuErrorLogged = false; // Flag to log GPU error only once
 async function updateSystemInfo() {
     if (updateInProgress) return;
     updateInProgress = true;
 
     try {
         // Update in parallel for better performance
-        const [cpuLoad, mem, disk, netStats] = await Promise.all([
+        const [cpuLoad, mem, disk, netStats, gpuUsage] = await Promise.all([
             si.currentLoad(),
             si.mem(),
             si.fsSize(),
             si.networkStats(),
+            getGpuUsage(),
         ]);
 
         // CPU Usage
-        cpuGauge.setPercent(Math.round(cpuLoad.currentLoad));
-        gpuGauge.setPercent(Math.round(cpuLoad.currentLoadGpu));
+        const cpuPercent = Math.round(cpuLoad.currentLoad || 0);
+        cpuGauge.setProgress(cpuPercent);
+
+        // GPU Usage
+        if (typeof gpuUsage === 'number' && gpuUsage >= 0) {
+            gpuGauge.setProgress(Math.round(gpuUsage));
+        } else if (gpuUsage && gpuUsage.error && !gpuErrorLogged) {
+            executedCommandLog.log(themeText.error(`GPU Error: ${gpuUsage.error}`));
+            gpuErrorLogged = true; // Set flag to true after logging
+        } else if (cpuLoad.currentLoadGpu) {
+            // fallback
+            gpuGauge.setProgress(Math.round(cpuLoad.currentLoadGpu));
+        } else {
+            gpuGauge.setProgress(0); // No GPU usage data
+            if (!gpuErrorLogged) {
+                executedCommandLog.log(themeText.warning('No GPU usage data available'));
+                gpuErrorLogged = true;
+            }
+        }
+
         // Memory Usage
         const memPercent = Math.round((mem.used / mem.total) * 100);
-        memGauge.setPercent(memPercent);
+        memGauge.setProgress(memPercent);
 
         // Disk Usage
         const mainDisk = disk[0];
@@ -253,41 +287,51 @@ async function updateSystemInfo() {
                     'Up: ' +
                     (netStats?.[0]?.tx_sec?.toFixed(2) ?? 'N/A') +
                     ' KB/s' +
-                    '\n' +
-                    'Latency: ' +
+                    ' Latency: ' +
                     (await getPingLatency('1.1.1.1')) +
                     ' ms',
             ].join('\n')
         );
         // System Information Log (update less frequently)
-        if (!this.lastInfoUpdate || Date.now() - this.lastInfoUpdate > 5000) {
+        if (!lastInfoUpdate || Date.now() - lastInfoUpdate > 5000) {
             const [cpu, os] = await Promise.all([si.cpu(), si.osInfo()]);
             sysInfoLog.setContent(
                 [
-                    // `CPU: ${cpu.manufacturer} ${cpu.brand}`,
-                    // `OS: ${os.distro} ${os.release}`,
+                    //     `CPU: ${cpu.manufacturer} ${cpu.brand}`,
+                    //     `OS: ${os.distro} ${os.release}`,
                     `Memory Total: ${Math.round(mem.total / 1024 / 1024 / 1024)} GB`,
                     `Memory Free: ${Math.round(mem.free / 1024 / 1024 / 1024)} GB`,
                 ].join('\n')
             );
 
-            this.lastInfoUpdate = Date.now();
+            lastInfoUpdate = Date.now();
         }
 
         screen.render();
         updateInProgress = false;
     } catch (error) {
-        sysInfoLog.log(themeText.error(`Error: ${error.message}`));
+        executedCommandLog.log(themeText.error(`Error: ${error.message}`));
         updateInProgress = false;
     }
 }
 
+// Completion box
+const completionBox = blessed.box({
+    parent: screen,
+    bottom: 6, // Above executedCommandLog (3 + 3)
+    height: '20%', // Adjusted height
+    width: '100%',
+    border: 'line',
+    style: theme.styles.box,
+    hidden: true,
+});
+
 // Create a container for prompt and input
 const inputContainer = blessed.box({
     parent: screen,
-    bottom: 6,
+    bottom: 0,
     left: 0,
-    height: 3,
+    height: 3, // Fixed height for input container
     border: 'line',
     width: '100%',
     style: {
@@ -299,10 +343,10 @@ const inputContainer = blessed.box({
 // Create prompt box for current directory
 const promptBox = blessed.box({
     parent: inputContainer,
-    bottom: 0,
+    top: 1,
     left: 0,
     height: 1,
-    width: 'shrink',
+    width: '50%', // Fixed width for prompt
     style: {
         fg: theme.colors.prompt,
         bg: theme.colors.bg,
@@ -312,9 +356,10 @@ const promptBox = blessed.box({
 // Create command input box
 const commandInput = blessed.textbox({
     parent: inputContainer,
-    bottom: 0,
+    top: 1,
+    left: '50%', // Position after prompt
     height: 1,
-    width: '100%-2',
+    width: '50%', // Adjust width to fill remaining space
     keys: true,
     mouse: true,
     inputOnFocus: true,
@@ -323,13 +368,9 @@ const commandInput = blessed.textbox({
 
 // Function to update current directory display
 async function updatePrompt() {
-    exec('powershell -Command "(Get-Location).Path"', (error, stdout) => {
-        if (!error) {
-            const path = stdout.trim();
-            promptBox.setContent(`PS ${path}> `);
-            screen.render();
-        }
-    });
+    const path = process.cwd();
+    promptBox.setContent(`PS ${path}> `);
+    screen.render();
 }
 
 // Function to get file and folder completions
@@ -345,7 +386,7 @@ function getFileAndFolderCompletions(input) {
             .map((item) => {
                 const fullPath = path.join(dir, item);
                 return fs.statSync(path.resolve(process.cwd(), fullPath)).isDirectory()
-                    ? fullPath + '\\'
+                    ? fullPath + '\\' // Corrected escaping for backslash in directory path
                     : fullPath;
             });
     } catch (error) {
@@ -394,72 +435,93 @@ const commonCommands = allCommands;
 
 // Handle tab completion
 commandInput.key(['tab'], () => {
-    const text = commandInput.getValue().trim();
+    const currentInputValue = commandInput.getValue().trim();
+    let isNewCompletionCycle = false;
 
-    // Reset completion state if input changed
-    if (text !== completionState.lastInput) {
-        completionState.current = text;
-        completionState.index = -1;
+    // If input has changed, re-evaluate completions and reset index
+    if (currentInputValue !== completionState.lastInput) {
+        completionState.current = currentInputValue;
+        completionState.index = -1; // Reset index for new input
+        isNewCompletionCycle = true;
 
-        // Get completions from different sources
-        const fileCompletions = getFileAndFolderCompletions(text);
-        const npmCompletions = getNpmScriptCompletions(text);
+        const fileCompletions = getFileAndFolderCompletions(currentInputValue);
+        const npmCompletions = getNpmScriptCompletions(currentInputValue);
         const profileCmdCompletions = profileCommands.filter((cmd) =>
-            cmd.toLowerCase().startsWith(text.toLowerCase())
+            cmd.toLowerCase().startsWith(currentInputValue.toLowerCase())
         );
         const cmdCompletions = commonCommands.filter((cmd) =>
-            cmd.toLowerCase().startsWith(text.toLowerCase())
+            cmd.toLowerCase().startsWith(currentInputValue.toLowerCase())
         );
 
-        // Combine all completions
         completionState.results = [
-            ...npmCompletions, // Prioritize npm completions
-            ...profileCmdCompletions, // Then profile commands
-            ...fileCompletions, // Then files and folders
-            ...cmdCompletions, // Then common commands
+            ...npmCompletions,
+            ...profileCmdCompletions,
+            ...fileCompletions,
+            ...cmdCompletions,
         ];
 
-        completionState.lastInput = text;
-
-        // Show available completions if there are any
-        if (completionState.results.length > 0) {
-            const maxDisplay = 10; // Show up to 10 completions
-            const displayedCompletions = completionState.results.slice(0, maxDisplay);
-            const remainingCount = Math.max(0, completionState.results.length - maxDisplay);
-
-            const hint = `
-Available completions (${completionState.results.length}):
-${displayedCompletions.map((comp, i) => `${i + 1}. ${comp}`).join('\n')}${
-    remainingCount > 0
-        ? `
-...and ${remainingCount} more`
-        : ''
-}`;
-
-            // Show completions in command log only
-            commandLog.show();
-            commandLog.log(themeText.completion(hint));
-            screen.render();
-        }
+        completionState.lastInput = currentInputValue; // Update lastInput after generating results
     }
 
-    // Cycle through results
+    // Cycle through results if available
     if (completionState.results.length > 0) {
+        // Increment index for cycling
         completionState.index = (completionState.index + 1) % completionState.results.length;
         const suggestion = completionState.results[completionState.index];
-        commandInput.setValue(suggestion);
+
+        // On the very first tab press for a new input, just show the first suggestion in the box.
+        // Do NOT update commandInput.setValue() yet.
+        // On subsequent tab presses, cycle and update the input field.
+        if (!isNewCompletionCycle && currentInputValue !== '') {
+            commandInput.setValue(suggestion);
+        }
+
+        // Always update the completion box to show the current suggestion
+        const maxDisplay = 10;
+        const displayedCompletions = completionState.results.slice(0, maxDisplay);
+        const remainingCount = Math.max(0, completionState.results.length - maxDisplay);
+
+        const hint = `Available completions (${
+            completionState.results.length
+        }):\n${displayedCompletions.join('\n')}${
+            remainingCount > 0 ? `\n...and ${remainingCount} more` : ''
+        }`;
+
+        completionBox.setContent(hint);
+        completionBox.show();
+        screen.render();
+    } else {
+        // No completions, hide the box
+        completionBox.hide();
         screen.render();
     }
 });
 
+// Handle space to select completion
+commandInput.key(['space'], () => {
+    if (completionState.results.length > 0) {
+        // A completion is active. We accept it.
+        // The value is already in the input.
+        // We just need to reset the completion state.
+        completionState.lastInput = '';
+        completionState.results = [];
+        completionBox.hide();
+        screen.render();
+        // The blessed textbox will automatically add the space character.
+        // We just need to ensure the completion state is reset.
+    }
+    // If no completion is active, let the default behavior of 'space' occur.
+    // No explicit action needed here.
+});
+
 // Handle input changes
 commandInput.on('keypress', (ch, key) => {
-    // Only reset completions on actual input changes, not on tab
-    if (key.name !== 'tab') {
+    // Only reset completions on actual input changes, not on tab or space (if completion is active)
+    if (key.name !== 'tab' && !(key.name === 'space' && completionState.results.length > 0)) {
         // Reset completion state when input changes
         completionState.lastInput = '';
         completionState.results = [];
-        // Clear the completion area
+        completionBox.hide();
         screen.render();
     }
 });
@@ -473,40 +535,38 @@ commandInput.on('submit', async () => {
         // Add command to output log with themed text
         const promptText = themeText.prompt(`PS ${process.cwd()}>`);
         const cmdText = themeText.input(command);
-        commandLog.show(); // Show command output area
-        commandLog.log(`
-${promptText} ${cmdText}`);
+        outputLog.log(`
+        ${promptText} ${cmdText}`);
+
+        const [cmd, ...args] = command.trim().split(' ');
 
         // Execute command using systeminformation if it's a special command
-        if (command.toLowerCase() === 'clear') {
-            commandLog.setContent('');
-            commandLog.hide();
+        if (cmd.toLowerCase() === 'clear') {
+            outputLog.setContent('');
+            executedCommandLog.setContent('');
+        } else if (cmd.toLowerCase() === 'cd') {
+            try {
+                const newDir = args[0] || process.env.HOME;
+                process.chdir(newDir);
+                await updatePrompt();
+            } catch (err) {
+                executedCommandLog.log(themeText.error(`cd: ${err.message}`));
+            }
         } else {
             // Execute PowerShell command
             exec(`powershell -Command "${command}"`, async (error, stdout, stderr) => {
                 if (error) {
-                    commandLog.log(themeText.error(`Error: ${error.message}`));
+                    executedCommandLog.log(themeText.error(`Error: ${error.message}`));
                 } else if (stderr) {
-                    commandLog.log(themeText.warning(stderr));
+                    executedCommandLog.log(themeText.warning(stderr));
                 } else if (stdout) {
-                    commandLog.log(stdout);
+                    outputLog.log(stdout);
                 }
-
-                // Add a blank line for better readability
-                commandLog.log('');
-
-                // Set a timer to hide the command output after 1 second
-                setTimeout(() => {
-                    commandLog.hide();
-                    screen.render();
-                }, 1000);
-
-                // Update prompt after command execution
                 await updatePrompt();
             });
         }
     } catch (error) {
-        outputLog.log(themeText.error(`Error: ${error.message}`));
+        executedCommandLog.log(themeText.error(`Error: ${error.message}`));
     }
 
     // Clear input after execution
@@ -541,31 +601,50 @@ commandInput.key(['C-c'], cleanup);
 // Initial focus
 commandInput.focus();
 
-// Initial update
-updateSystemInfo();
-
-// Update every second
-global.updateInterval = setInterval(updateSystemInfo, 1000);
-
-// Load PowerShell profile commands
-(async () => {
-    try {
-        profileCommands = await getProfileCommands();
-        sysInfoLog.log(
-            themeText.success(`Loaded ${profileCommands.length} commands from PowerShell profile`)
-        );
-    } catch (error) {
-        sysInfoLog.log(
-            themeText.error(`Failed to load PowerShell profile commands: ${error.message}`)
-        );
-    }
-})();
-
 // Initial prompt update
 updatePrompt();
 
-// Render the screen
+// Render the screen to start the UI
 screen.render();
+
+// Once the screen has rendered for the first time, start background processes
+screen.once('render', () => {
+    // Load PowerShell profile commands
+    (async () => {
+        try {
+            profileCommands = await getProfileCommands();
+            // Log to outputLog instead of sysInfoLog
+            outputLog.log(
+                themeText.success(
+                    `Loaded ${profileCommands.length} commands from PowerShell profile`
+                )
+            );
+        } catch (error) {
+            executedCommandLog.log(
+                themeText.error(`Failed to load PowerShell profile commands: ${error.message}`)
+            );
+        }
+    })();
+
+    // Initial update
+    updateSystemInfo();
+
+    // Force immediate gauge rendering to ensure visibility
+    setTimeout(() => {
+        try {
+            cpuGauge.setProgress(0);
+            memGauge.setProgress(0);
+            gpuGauge.setProgress(0);
+            screen.render();
+        } catch (error) {
+            // Log but don't fail initialization
+            console.error('Error initializing gauges:', error);
+        }
+    }, 500);
+
+    // Start the update loop
+    global.updateInterval = setInterval(updateSystemInfo, 3000);
+});
 
 // Keep the process alive
 process.on('SIGINT', cleanup);

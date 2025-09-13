@@ -6,7 +6,7 @@ APS CLI is a powerful and interactive terminal-based command-line interface desi
 
 ## Features
 
-- **Interactive Terminal UI:** A rich and responsive user interface powered by `blessed` and `blessed-contrib`.
+- **Interactive Terminal UI:** A rich and responsive user interface powered by `blessed` with improved layout and alignment for system info, command input, and command logs.
 - **Real-time System Monitoring:**
     - **CPU Usage:** Monitor your CPU load with a dynamic gauge.
     - **Memory Usage:** Keep track of your system's memory consumption.

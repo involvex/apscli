@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/icon?family=Material+Buttons" rel="stylesheet" />
+        <link
+            rel="stylesheet"
+            href="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.css"
+        />
+        <link
+            rel="stylesheet"
+            href="https://unpkg.com/@material/typography@latest/dist/typography.min.css"
+        />
+        <link
+            rel="stylesheet"
+            href="https://unpkg.com/@material/elevation@latest/dist/elevation.min.css"
+        />
+        <link
+            rel="stylesheet"
+            href="https://unpkg.com/@material/checkbox@14.0.0/dist/mdc.checkbox.css"
+        />
+        <link
+            rel="stylesheet"
+            href="https://unpkg.com/@material/button@14.0.0/dist/mdc.button.css"
+        />
+
+        <title>Custom Terminal UI</title>
+        <style>
+            body {
+                background-color: #000000;
+                color: #39ff14;
+                font-family: monospace;
+                display: flex;
+                flex-direction: column;
+                align-items: center; /* Center items horizontally */
+                margin: 0; /* Remove default body margin */
+                height: 100vh; /* Full viewport height */
+                box-sizing: border-box; /* Include padding and border in the element's total width and height */
+            }
+            .terminal-container {
+                border: 1px solid #ffffff;
+                margin: 20px;
+                width: 90%; /* Adjust width as needed */
+                max-width: 1000px; /* Max width for better readability */
+                height: 70vh;
+                box-sizing: border-box;
+            }
+            iframe {
+                border: none;
+                width: 100%;
+                height: 100%;
+            }
+            #command-log {
+                border: 1px solid #00ffff;
+                margin: 0 20px 20px 20px; /* Top, Right, Bottom, Left */
+                padding: 10px;
+                width: 90%; /* Adjust width as needed */
+                max-width: 1000px; /* Max width for better readability */
+                height: 20vh;
+                overflow-y: scroll;
+                text-align: left;
+                background-color: #1a1a1a;
+                box-sizing: border-box;
+            }
+            #command-log h3 {
+                margin-top: 0;
+                color: #00ffff;
+            }
+            #command-log p {
+                margin: 0;
+                padding: 2px 0;
+            }
+            #command-log pre {
+                margin: 0;
+                padding: 2px 0;
+                white-space: pre-wrap; /* Wrap long lines */
+                word-break: break-all; /* Break words to prevent overflow */
+            }
+        </style>
+    </head>
+    <body>
+        <!-- <img src="logo.png" alt="Logo" class="logo-img"> -->
+        <div class="terminal-container">
+            <iframe src="apscli/index.html" title="APSCLI Terminal"></iframe>
+        </div>
+        <div id="command-log">
+            <h3>Command Log</h3>
+        </div>
+    </body>
+</html>

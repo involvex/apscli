@@ -71,6 +71,14 @@ export default defineConfig([
             ],
         },
     },
+    {
+        files: ['src/core/tests/*.js'],
+        languageOptions: {
+            globals: {
+                ...globals.mocha,
+            },
+        },
+    },
 ]);
 // This is a temporary file for command handling setup.
 // It is not used in the main application.

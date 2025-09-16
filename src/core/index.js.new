@@ -1,0 +1,238 @@
+/***********************************************
+ * @License
+ * Copyright Involvex
+ * Copyright 2025
+ ***********************************************/
+
+const blessed = require('blessed');
+const si = require('systeminformation');
+const fs = require('fs');
+const path = require('path');
+const { exec } = require('child_process');
+
+// Import custom modules
+const { allCommands } = require('./commands.js');
+const { loadSlashCommands, handleSlashCommand } = require('./slash-commands');
+const { loadTheme } = require('../themes/theme-loader.js');
+const { getProfileCommands } = require('./powershell-utils.js');
+
+// Load theme and initialize text formatting
+const theme = loadTheme(path.join(process.cwd(), 'src/themes/default.css'));
+const themeText = theme.text;
+
+// Store profile commands
+let profileCommands = [];
+let lastInfoUpdate = 0;
+
+// Create a screen object
+const screen = blessed.screen({
+    smartCSR: true,
+    title: 'APS CLI - Advanced PowerShell Command Line Interface',
+    dockBorders: true,
+    fullUnicode: true,
+});
+
+// Create header
+const header = blessed.box({
+    parent: screen,
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: 3,
+    content: 'APSCLI',
+    align: 'center',
+    valign: 'middle',
+    tags: true,
+    style: theme.styles.header,
+    border: 'line',
+});
+
+// Command output log (main terminal output)
+const outputLog = blessed.log({
+    parent: screen,
+    top: 3,
+    left: 0,
+    width: '75%',
+    bottom: 4,
+    label: 'Terminal Output',
+    tags: true,
+    border: 'line',
+    style: { ...theme.styles.log, bg: '#000000' },
+    scrollable: true,
+    alwaysScroll: true,
+    scrollbar: {
+        style: {
+            bg: theme.colors.scrollbar,
+        },
+    },
+    mouse: true,
+});
+
+// Load slash commands
+const slashCommands = loadSlashCommands();
+
+// Handle command execution
+commandInput.on('submit', async () => {
+    if (completionList.visible) {
+        completionList.emit('select', completionList.items[completionList.selected]);
+        return;
+    }
+    const command = commandInput.getValue();
+    if (!command) return;
+
+    try {
+        const promptText = themeText.prompt(`PS ${process.cwd()}>`);
+        const cmdText = themeText.input(command);
+        if (outputLog) {
+            outputLog.log(`${promptText} ${cmdText}`);
+        }
+        if (executedCommandLog) {
+            executedCommandLog.log(command);
+        }
+
+        if (command.startsWith('/')) {
+            const handled = await handleSlashCommand(command, outputLog, themeText, slashCommands);
+            if (!handled) {
+                outputLog.log(themeText.error(`Unknown slash command: ${command.split(' ')[0]}`));
+            }
+        } else {
+            const [cmd, ...args] = command.trim().split(' ');
+
+            if (cmd.toLowerCase() === 'clear') {
+                if (outputLog) {
+                    outputLog.setContent('');
+                }
+            } else if (cmd.toLowerCase() === 'npm-scripts') {
+                try {
+                    const packagePath = path.join(process.cwd(), 'package.json');
+                    if (fs.existsSync(packagePath)) {
+                        const packageJson = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
+                        const scripts = packageJson.scripts || {};
+                        outputLog.log(themeText.success('Available npm scripts:'));
+                        for (const scriptName in scripts) {
+                            outputLog.log(`  ${scriptName}: ${scripts[scriptName]}`);
+                        }
+                    } else {
+                        outputLog.log(
+                            themeText.warning('No package.json found in the current directory.')
+                        );
+                    }
+                } catch (err) {
+                    outputLog.log(themeText.error(`Error reading package.json: ${err.message}`));
+                }
+            } else {
+                exec(`powershell -Command "${command}"`, async (error, stdout, stderr) => {
+                    if (error) {
+                        if (outputLog) {
+                            outputLog.log(themeText.error(`Error: ${error.message}`));
+                        }
+                    } else if (stderr) {
+                        if (outputLog) {
+                            outputLog.log(themeText.warning(stderr));
+                        }
+                    } else if (stdout) {
+                        if (outputLog) {
+                            outputLog.log(stdout);
+                        }
+                    }
+                    await updatePrompt();
+                });
+            }
+        }
+    } catch (error) {
+        if (outputLog) {
+            outputLog.log(themeText.error(`Error: ${error.message}`));
+        }
+    }
+
+    commandInput.setValue('');
+    if (typeof commandInput.value !== 'string') {
+        commandInput.value = '';
+    }
+    commandInput.focus();
+    screen.render();
+});
+
+// Update system information with throttling
+let updateInProgress = false;
+
+async function updateSystemInfo() {
+    if (updateInProgress) return;
+    updateInProgress = true;
+
+    try {
+        const [cpuLoad, mem, disk, netStats] = await Promise.all([
+            si.currentLoad(),
+            si.mem(),
+            si.fsSize(),
+            si.networkStats(),
+        ]);
+
+        cpuGauge.setContent(createProgressBar(Math.round(cpuLoad.currentLoad)));
+
+        const memPercent = Math.round((mem.used / mem.total) * 100);
+        memGauge.setContent(createProgressBar(memPercent));
+
+        const mainDisk = disk[0];
+        const usedPercent = Math.round((mainDisk.used / mainDisk.size) * 100);
+        const usedGB = Math.round(mainDisk.used / 1024 / 1024 / 1024);
+        const totalGB = Math.round(mainDisk.size / 1024 / 1024 / 1024);
+        const progressBar = createProgressBar(usedPercent);
+        diskBox.setContent(
+            `  ${mainDisk.mount}  ${progressBar}  (${usedGB}GB / ${totalGB}GB)`
+        );
+
+        networkStats.setContent(
+            [
+                `Down: ${(netStats?.[0]?.rx_sec?.toFixed(2) ?? 'N/A')} KB/s`,
+                `Up: ${(netStats?.[0]?.tx_sec?.toFixed(2) ?? 'N/A')} KB/s`,
+                `Latency: ${await getPingLatency('1.1.1.1')} ms`,
+            ].join('\n')
+        );
+
+        if (!lastInfoUpdate || Date.now() - lastInfoUpdate > 5000) {
+            const [cpu, os] = await Promise.all([si.cpu(), si.osInfo()]);
+            sysInfoLog.setContent(
+                [
+                    `Memory Total: ${Math.round(mem.total / 1024 / 1024 / 1024)} GB`,
+                    `Memory Free: ${Math.round(mem.free / 1024 / 1024 / 1024)} GB`,
+                ].join('\n')
+            );
+            lastInfoUpdate = Date.now();
+        }
+        screen.render();
+        updateInProgress = false;
+    } catch (error) {
+        if (outputLog) {
+            outputLog.log(themeText.error(`Error updating system info: ${error.message}`));
+        }
+        updateInProgress = false;
+    }
+}
+
+// Once the screen has rendered for the first time, start background processes
+screen.once('render', async () => {
+    updateSystemInfo();
+
+    getProfileCommands().then(commands => {
+        profileCommands = commands;
+    });
+
+    const packageJson = JSON.parse(
+        fs.readFileSync(path.join(process.cwd(), 'package.json'), 'utf8')
+    );
+    const version = packageJson.version;
+    const repoUrl = packageJson.repository.url.replace('git+', '').replace('.git', '');
+    footer.setContent(
+        `{center}APSCLI v${version} | ${repoUrl} | Hotkeys: q/esc (quit), tab (autocomplete){/center}`
+    );
+
+    global.updateInterval = setInterval(updateSystemInfo, 3000);
+    commandInput.focus();
+    screen.render();
+});
+
+// Keep the process alive
+process.on('SIGINT', cleanup);
+process.on('SIGTERM', cleanup);
+process.stdin.resume();

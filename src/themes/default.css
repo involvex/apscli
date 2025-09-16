@@ -1,0 +1,12 @@
+:root {
+    --fg: '#32CD32';
+    --bg: '#000000';
+    --border: '#FFFFFF';
+    --error: '#FF0000';
+    --warning: '#00FF00';
+    --success: '#32CD32';
+    --prompt: '#32CD32';
+    --input: '#32CD32';
+    --scrollbar: '#FFFFFF';
+    --completion: '#32CD32';
+}

@@ -10,6 +10,14 @@
         "es6": true
     },
     "extends": ["eslint:recommended"],
+    "overrides": [
+        {
+            "files": ["src/core/tests/*.js"],
+            "env": {
+                "mocha": true
+            }
+        }
+    ],
     "parserOptions": {
         "ecmaVersion": 2022,
         "sourceType": "module"
@@ -20,6 +28,13 @@
         "quotes": ["error", "single"],
         "semi": ["error", "always"],
         "no-unused-vars": "warn",
-        "no-console": "off"
+        "no-console": "off",
+        "header/header": [
+            2,
+            "block",
+            {
+                "pattern": "/***********************************************\r\n * @License\r\n * Copyright Involvex\r\n * Copyright 2025\r\n ***********************************************/"
+            }
+        ]
     }
 }
